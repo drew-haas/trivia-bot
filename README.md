@@ -1,4 +1,6 @@
+Forked from [easy-peasy-bot](https://github.com/slackapi/easy-peasy-bot)
 # easy-peasy-bot
+
 
 ## The story of a (Slack)bot
 
