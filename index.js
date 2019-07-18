@@ -697,6 +697,7 @@ let currentQuestion,
     correctAnswers = [],
     roundResults = [],
     allResults = [],
+    timeout,
     gameActive = false;
 
 /**
@@ -704,6 +705,13 @@ let currentQuestion,
  */
 controller.on('bot_channel_join', function (bot, message) {
     bot.reply(message, "I'm here let's play!");
+});
+
+/**
+ * Help Commands
+ */
+controller.hears('help', ['direct_mention', 'mention', 'direct_message'], function(bot, message) {
+    bot.reply(message, 'Hello I\'m Trivia Bot. I\'m here to play Trivia Games with your Team!\n\nPlay Options include: `@triviabot play all | play general | play sports | play movies | play cm`\n`STOP` to end the current game\n`SCORE` to get the current or total scores\n\n_Each round (currently) only lasts 30 seconds. Just like Tyler_');
 });
 
 /**
@@ -743,6 +751,23 @@ controller.hears('(play all|play general|play sports|play movies|play cm)', ['di
     // start round
     // let the rest of the functionality for each round come from here:
     startRound(data, currentQuestion);
+
+    // start a timer with end round callback
+    // each timer will be 30 seconds for now
+    timeout = setTimeout(function() {
+        console.log('Times up.. remaining answers:', remainingAnswers);
+
+        bot.reply(message, 'Time\'s up!');
+        bot.reply(message, '*Round Scores:*');
+        for (var i = 0; i <= roundResults.length - 1; i++) {
+            bot.reply(message, '<@' + roundResults[i].userid + '> with *' + roundResults[i].score + ' points*');
+        }
+
+        // reset
+        gameActive = false;
+        currentQuestion = null;
+        roundData = null;
+    }, 30000);
 });
 
 /**
@@ -750,12 +775,21 @@ controller.hears('(play all|play general|play sports|play movies|play cm)', ['di
  */
 controller.hears(['STOP'], ['direct_mention', 'mention', 'ambient', 'direct_message'], function(bot, message) {
     if (gameActive) {
+        gameActive = false;
+
         var leftovers = remainingAnswers;
-        bot.reply(message, 'round stopped! \n here\'s what you missed:' + leftovers);
+        bot.reply(message, 'Round Stopped!');
+        bot.reply(message, '*Round Scores:*');
+        for (var i = 0; i <= roundResults.length - 1; i++) {
+            bot.reply(message, '<@' + roundResults[i].userid + '> with *' + roundResults[i].score + ' points*');
+        }
+        // bot.reply(message, 'round stopped! \n here\'s what you missed:' + leftovers);
 
         // stop listening/clear answers
         remainingAnswers = [];
-        // print out information needed
+
+        // cancel current timeout
+        clearTimeout(timeout);
 
     } else {
         bot.reply(message, 'No active game right now. Play a game by messaging "@triviabot play all".');
@@ -783,8 +817,6 @@ controller.hears(['SCORE', 'score'], ['direct_mention', 'mention', 'ambient', 'd
  * Round Functionality
  */
 function startRound(roundData, currentQuestion) {
-    roundResults = [];
-
     // if bot hears one of the answers.. track who answered it.. notify it was answered..
     controller.hears(remainingAnswers, ['ambient'], function (bot, message) {
         // correct answer
@@ -824,30 +856,6 @@ function startRound(roundData, currentQuestion) {
 
     // if bot hears same answer twice.. notify it has been answered by whom
     // controller.hears()
-
-    // start a timer with end round callback
-    // each timer will be 30 seconds for now
-    setTimeout(function() {
-        console.log('END ROUND');
-        console.log('remaining answers:', remainingAnswers);
-
-        // reset
-        currentQuestion = null;
-        roundData = null;
-    }, 30000);
-}
-
-function endRound() {
-    console.log('end round');
-
-    // stop tracking
-
-    // notify round has ended
-    // bot.reply(message, 'Round ended!');
-
-    // notify
-
-    // add missed function
 }
 
 
